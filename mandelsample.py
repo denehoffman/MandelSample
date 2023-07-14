@@ -59,7 +59,7 @@ def get_dist(data_path, acc_path, gen_path, t_branch, min_t, max_t, n_bins, run_
         f = gen_hist
         print("Evaluating probabilities...")
         accepted_ids = set()
-        for index, t_val in tqdm(enumerate(gen_t)):
+        for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t):
             t_bin = np.digitize(t_val, bins) - 1
             prob = f[t_bin] / Cg[t_bin]
             if np.random.uniform(0, 1) <= prob:
