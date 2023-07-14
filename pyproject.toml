@@ -1,0 +1,35 @@
+[project]
+name = "mandelsample"
+version = "0.1.0"
+description = "A Mandelstam-t distribution resampler for GlueX data analysis"
+authors = [{name="Dene Hoffman", email="dene@cmu.edu"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+keywords = ["python", "package"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dynamic = ["dependencies"]
+
+[project.scripts]
+mandelsample = "mandelsample:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[options]
+python_requires = ">=3.6"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}

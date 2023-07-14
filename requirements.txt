@@ -1,0 +1,4 @@
+uproot>=5.0.10
+matplotlib>=3.7.2
+numpy>=1.25.1
+tqdm>=4.65.0
