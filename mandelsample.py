@@ -118,3 +118,6 @@ def main():
              Path(args['<acc>']),
              args['--run-branch'],
              args['--event-branch'])
+
+if __name__ == '__main__':
+    main()
