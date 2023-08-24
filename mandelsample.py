@@ -11,9 +11,9 @@ Options:
     --event-branch-acc <event_branch_acc>   Specify branch with event number for Accepted Monte Carlo [default: event]
     --run-branch-gen <run_branch_gen>       Specify branch with run number for Generated Monte Carlo [default: RunNumber]
     --event-branch-gen <event_branch_gen>   Specify branch with event number for Generated Monte Carlo [default: EventNumber]
-    -l <min_t>                              Set lower bound of t-distribution [default: 0.0]
+    -l <min_t>                              Set lower bound of t-distribution [default: 0.1]
     -h <max_t>                              Set upper bound of t-distribution [default: 2.0]
-    -n <n_bins>                             Set number of bins to use [default: 15]
+    -n <n_bins>                             Set number of bins to use [default: 25]
 """
 
 
@@ -30,13 +30,8 @@ def get_dist(data_path, acc_path, gen_path, t_branch_data, t_branch_acc, t_branc
         data_tree = data_file[data_file.keys()[0]]
         acc_tree = acc_file[acc_file.keys()[0]]
         gen_tree = gen_file[gen_file.keys()[0]]
-        #data_t = data_tree[t_branch].array(library='np')
-        #acc_t = acc_tree[t_branch].array(library='np')
         data_t = data_tree.arrays([t_branch_data], f"({t_branch_data} > {min_t}) & ({t_branch_data} < {max_t})", library='np')[t_branch_data]
         acc_t = acc_tree.arrays([t_branch_acc], f"({t_branch_acc} > {min_t}) & ({t_branch_acc} < {max_t})", library='np')[t_branch_acc]
-        #gen_t = gen_tree[t_branch].array(library='np')
-        #gen_run = gen_tree[run_branch].array(library='np')
-        #gen_event = gen_tree[event_branch].array(library='np')
         gen_df = gen_tree.arrays([t_branch_gen, run_branch_gen, event_branch_gen], f"({t_branch_gen} > {min_t}) & ({t_branch_gen} < {max_t})", library='np')
         gen_t = gen_df[t_branch_gen]
         gen_run = gen_df[run_branch_gen]
@@ -84,7 +79,7 @@ def get_dist(data_path, acc_path, gen_path, t_branch_data, t_branch_acc, t_branc
         accepted_ids = set()
         for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t)):
             t_bin = np.digitize(t_val, bins) - 1
-            prob = f[t_bin] / Cg[t_bin]
+            prob = Cg[t_bin]
             if np.random.uniform(0, 1) <= prob:
                 accepted_ids.add(f"{gen_run[index]}: {gen_event[index]}")
         return accepted_ids
