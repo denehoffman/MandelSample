@@ -12,9 +12,31 @@ Options:
     -h <max_t>          Set upper bound of t-distribution [default: 2.0]
     -n <n_bins>         Set number of bins to use [default: 25]
     --help              Show this screen.
+
+Notes:
+    1. The options '-a' and '-g' are used to construct unique identifiers for each event. The default
+       will only work if the combination of RunNumber and EventNumber is unique for every event, and
+       maps to the same combination of numbers in both Accepted and Generated MC. 
+
+       If these alone do not uniquely identify an event, you can add others with those arguments. The
+       branch names can even differ between the TTrees as long as the underlying data is the same.
+       For instance, in the current versions of MCWrapper, the EventNumber is reset for every batch,
+       and the batches are all merged before the user has access to the individual files. This means
+       there will be ~N events with the same RunNumber and EventNumber where N is the number of batches.
+    
+       To circumvent this, you could additionally specify a branch such as the thrown beam energy, 
+       which should be approximately unique to that set of ~N events in this case. The numeric value
+       of the branches are converted to strings separated by '_'. For example:
+
+       $ mandelsample data.root acc.root gen.root -a RunNumber,EventNumber,E_ThrownBeam -g RunNumber,EventNumber,E_Beam
+    
+       This would create unique IDs like "37040_1403_7.834902" (or something similar).
+    2. The values for -l <min_t> and -h <max_t> are used with respect to "-t", so you'll probably
+       want to use positive numbers with <min_t> < <max_t>.
 """
 
 
+import sys
 import numpy as np
 from pathlib import Path
 import uproot
@@ -30,38 +52,76 @@ def main():
     gen_path = Path(args['<gen>'])
     t_low = args['-l']
     t_high = args['-h']
+    if t_low >= t_high:
+        print(f"Error! Bounds on -t are unphysical ({t_low} ≮ {t_high})")
+        sys.exit(1)
     n_bins = args['-n']
+    t_data = args['--t-data']
+    t_acc = args['--t-acc']
+    if not t_acc:
+        t_acc = t_data  # default to t_data if not given
+    t_gen = args['--t-gen']
+    if not t_gen:
+        t_gen = t_data  # default to t_data if not given
+    gen_branches = args['-g'].split(',')
+    acc_branches = args['-a'].split(',')
+    if len(gen_branches) != len(acc_branches):
+        print("Error! You must specify the same number of branches in both Accepted and Generated MC for unique identification of events")
+        sys.exit(1)
+    # Open all three files with uproot
     with uproot.open(data_path) as data_file, uproot.open(acc_path) as acc_file, uproot.open(gen_path) as gen_file:
+        # Grab first TTree in each file
         data_tree = data_file[data_file.keys()[0]]
         acc_tree = acc_file[acc_file.keys()[0]]
         gen_tree = gen_file[gen_file.keys()[0]]
+
+        # Get desired branches from each file, selecting t in specified bounds
+        print("Loading datasets...")
         t_filter = lambda branch_name: f"({branch_name} > {t_low}) & ({branch_name} < {t_high})"
-        data_t = data_tree.arrays([args['--t-data']], t_filter(args['--t-data']), library='np')[args['--t-data']]
-        acc_t = acc_tree.arrays([args['--t-acc']], t_filter(args['--t-acc']), library='np')[args['--t-acc']]
-        gen_df = gen_tree.arrays([args['--t-gen'], *args['-g'].split(',')], t_filter(args['--t-gen']), library='np')
-        gen_t = gen_df[args['--t-gen']]
+        data_t = data_tree.arrays([t_data], t_filter(t_data), library='np')[t_data]
+        acc_t = acc_tree.arrays([t_acc], t_filter(t_acc), library='np')[t_acc]
+        gen_df = gen_tree.arrays([t_gen, *gen_branches], t_filter(t_gen), library='np')
+        gen_t = gen_df[t_gen]
+
+        # Make some histograms of t for each dataset
         data_hist, bins = np.histogram(data_t, range=(t_low, t_high), bins=n_bins)
         acc_hist, _ = np.histogram(acc_t, range=(t_low, t_high), bins=n_bins)
-        gen_hist, _ = np.histogram(gen_t, range=(t_low, t_high), bins=n_bins)
-        ratio = data_hist / acc_hist
-        normalized_ratio = ratio / np.abs(sum(ratio) * np.diff(bins)[0])
-        Cg = normalized_ratio  / np.amax(normalized_ratio);
-        accepted_ids = set()
-        for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t)):
-            t_bin = np.digitize(t_val, bins) - 1
-            prob = Cg[t_bin]
-            if np.random.uniform(0, 1) <= prob:
-                accepted_ids.add("_".join([str(gen_df[branch][index]) for branch in args['-g'].split(',')]))
+        # gen_hist, _ = np.histogram(gen_t, range=(t_low, t_high), bins=n_bins)
 
+        # Get efficiency
+        efficiency = data_hist / acc_hist
+
+        # Scale efficiency so that max(efficiency) = 1.0 (this speeds up sampling)
+        scaled_efficiency = efficiency  / np.amax(efficiency);
+
+        # Create a set of unique "IDs" for the sampled events
+        accepted_ids = set()
+
+        # Sample generated MC
+        print("Calculating sampled events...")
+        for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t)):
+            # shortcut for getting the bin where this t would be placed
+            t_bin = np.digitize(t_val, bins) - 1
+            # sample the point if the scaled_efficiency of the bin exceeds a uniform random number
+            if np.random.uniform(0, 1) <= scaled_efficiency[t_bin]:
+                # IDs are formated as an underscore-separated list of values
+                # For example, the default might combine RunNumber and EventNumber
+                # to formulate IDs like 37040_13, 37040_14, etc.
+                accepted_ids.add("_".join([str(gen_df[branch][index]) for branch in gen_branches]))
+
+    # We will write the sampled files in ROOT because it's faster and we can copy the whole
+    # tree structure dynamically with CloneTree(0)
     gen_file = ROOT.TFile.Open(str(gen_path))
     gen_out_file = ROOT.TFile(str(gen_path.parent / (gen_path.stem + "_sampled.root")), "RECREATE")
     try:
+        # Get the first tree in the file
         gen_tree = gen_file.GetListOfKeys().At(0).ReadObj()
         gen_out_tree = gen_tree.CloneTree(0)
         print("Resampling Generated MC...")
         for entry in tqdm(range(gen_tree.GetEntries())):
             gen_tree.GetEntry(entry)
-            event_id = "_".join([str(getattr(gen_tree, branch)) for branch in args['-g'].split(',')])
+            event_id = "_".join([str(getattr(gen_tree, branch)) for branch in gen_branches])
+            # if the ID is in the set of IDs from the random sampling, we fill the event in the output tree
             if event_id in accepted_ids:
                 gen_out_tree.Fill()
         gen_out_tree.Write()
@@ -69,11 +129,11 @@ def main():
         gen_out_file.Close()
         gen_file.Close()
 
-    # now that we have the resampled generated MC, we need to remove the events that were rejected in the accepted MC
-
+    # Now that we have the resampled generated MC, we need to remove the rejected events in the accepted MC
     acc_file = ROOT.TFile.Open(str(acc_path))
     acc_out_file = ROOT.TFile(str(acc_path.parent / (acc_path.stem + "_sampled.root")), "RECREATE")
     try:
+        # Get the first tree in the file
         acc_tree = acc_file.GetListOfKeys().At(0).ReadObj()
         acc_out_tree = acc_tree.CloneTree(0)
         print("Resampling Accepted MC...")
@@ -81,7 +141,8 @@ def main():
         print(acc_tree.GetEntries())
         for entry in tqdm(range(acc_tree.GetEntries())):
             acc_tree.GetEntry(entry)
-            event_id = "_".join([str(getattr(acc_tree, branch)) for branch in args['-a'].split(',')])
+            event_id = "_".join([str(getattr(acc_tree, branch)) for branch in acc_branches])
+            # if the ID is in the set of IDs from the random sampling, we fill the event in the output tree
             if event_id in accepted_ids:
                 acc_out_tree.Fill()
         acc_out_tree.Write()
