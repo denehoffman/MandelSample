@@ -66,15 +66,7 @@ def get_dist(data_path, acc_path, gen_path, t_branch_data, t_branch_acc, t_branc
         #plt.tight_layout()
         #fig.tight_layout()
         #plt.show()
-        #const = np.inf
-        #for ibin, value in enumerate(normalized_ratio):
-        #    #gen_value = gen_hist[ibin]
-        #    proposal = 1 / value
-        #    if proposal < const:
-        #        const = proposal
-        Cg = normalized_ratio / np.amax(normalized_ratio);
-        print(Cg)
-        f = gen_hist
+        Cg = normalized_ratio  / np.amax(normalized_ratio);
         print("Evaluating probabilities...")
         accepted_ids = set()
         for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t)):
@@ -108,6 +100,8 @@ def resample(accepted_ids, gen_path, acc_path, run_branch_gen, event_branch_gen,
     acc_out_file = ROOT.TFile(str(acc_path.parent / (acc_path.stem + "_sampled.root")), "RECREATE")
     acc_out_tree = acc_tree.CloneTree(0)
     print("Resampling Accepted MC...")
+    print(len(accepted_ids))
+    print(acc_tree.GetEntries())
     for entry in tqdm(range(acc_tree.GetEntries())):
         acc_tree.GetEntry(entry)
         run_number = getattr(acc_tree, run_branch_acc)
