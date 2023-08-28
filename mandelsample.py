@@ -38,33 +38,7 @@ def get_dist(data_path, acc_path, gen_path, t_branch_data, t_branch_acc, t_branc
         gen_hist, _ = np.histogram(gen_t, range=(min_t, max_t), bins=n_bins)
         ratio = data_hist / acc_hist
         normalized_ratio = ratio / np.abs(sum(ratio) * np.diff(bins)[0])
-        #fig, ax = plt.subplots(figsize=(15, 7))
-        #fig = plt.figure(constrained_layout=True)
-        #fig, ((ax0, ax1), (ax2)) plt.subplot_mosaic()
-        #axs = fig.subplot_mosaic([['TopLeft', 'Right'],['BottomLeft', 'Right']],
-        #                  gridspec_kw={'width_ratios':[1, 2]})
-        #axs['Right'].hist(bins[:-1], bins, weights=normalized_ratio, color='tab:red')
-        #axs['Right'].set_title('Normalized Ratio')
-        #axs['TopLeft'].hist(data_t, density=True, range=(min_t, max_t), bins=n_bins)
-        #axs['TopLeft'].set_title('Data Hist')
-        #axs['BottomLeft'].hist(acc_t, density=True, range=(min_t, max_t), bins=n_bins)
-        #axs['BottomLeft'].set_title('Acc Hist')
-        #ax3.set_title("normalized_ratio")     
-        #ax.stairs(normalized_ratio, bins, label='Data/Accepted MC', color='C0')
-        #ax.legend(loc="upper left")
-        #ax.set_ylabel("Normalized Ratio")
-        #ax2 = ax.twinx()
-        #ax2.stairs(data_hist, bins, label='Data', color='C1')
-        #ax2.stairs(acc_hist, bins, label='Accepted MC', color='C2')
-        #ax2.legend(loc="upper right")
-        #bin_width = round(np.abs(max_t - min_t) / n_bins, 2)
-        #ax2.set_ylabel(f"Counts / {bin_width} GeV${{}}^2$")
-        #plt.xlabel("Mandelstam t")
-        #plt.tight_layout()
-        #fig.tight_layout()
-        #plt.show()
         Cg = normalized_ratio  / np.amax(normalized_ratio);
-        print("Evaluating probabilities...")
         accepted_ids = set()
         for index, t_val in tqdm(enumerate(gen_t), total=len(gen_t)):
             t_bin = np.digitize(t_val, bins) - 1
