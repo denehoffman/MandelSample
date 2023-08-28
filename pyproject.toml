@@ -22,7 +22,7 @@ classifiers = [
 dynamic = ["dependencies"]
 
 [project.scripts]
-mandelsample = "mandelsample:main"
+mandelsample = "mandelsample.sample:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]

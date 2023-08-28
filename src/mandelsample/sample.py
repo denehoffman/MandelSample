@@ -88,11 +88,11 @@ def main():
         acc_hist, _ = np.histogram(acc_t, range=(t_low, t_high), bins=n_bins)
         # gen_hist, _ = np.histogram(gen_t, range=(t_low, t_high), bins=n_bins)
 
-        # Get efficiency
-        efficiency = data_hist / acc_hist
+        # Get probability distribution
+        pdf = data_hist / acc_hist
 
-        # Scale efficiency so that max(efficiency) = 1.0 (this speeds up sampling)
-        scaled_efficiency = efficiency  / np.amax(efficiency);
+        # Scale pdf so that max(pdf) = 1.0 (this speeds up sampling)
+        scaled_pdf = pdf / np.amax(pdf);
 
         # Create a set of unique "IDs" for the sampled events
         accepted_ids = set()
