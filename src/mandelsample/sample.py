@@ -103,7 +103,7 @@ def main():
             # shortcut for getting the bin where this t would be placed
             t_bin = np.digitize(t_val, bins) - 1
             # sample the point if the scaled_efficiency of the bin exceeds a uniform random number
-            if np.random.uniform(0, 1) <= scaled_efficiency[t_bin]:
+            if np.random.uniform(0, 1) <= scaled_pdf[t_bin]:
                 # IDs are formated as an underscore-separated list of values
                 # For example, the default might combine RunNumber and EventNumber
                 # to formulate IDs like 37040_13, 37040_14, etc.
