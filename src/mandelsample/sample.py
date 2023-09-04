@@ -50,12 +50,12 @@ def main():
     data_path = Path(args['<data>'])
     acc_path = Path(args['<acc>'])
     gen_path = Path(args['<gen>'])
-    t_low = args['-l']
-    t_high = args['-h']
+    t_low = float(args['-l'])
+    t_high = float(args['-h'])
     if t_low >= t_high:
         print(f"Error! Bounds on -t are unphysical ({t_low} ≮ {t_high})")
         sys.exit(1)
-    n_bins = args['-n']
+    n_bins = int(args['-n'])
     t_data = args['--t-data']
     t_acc = args['--t-acc']
     if not t_acc:
