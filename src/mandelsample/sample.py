@@ -10,7 +10,7 @@ Options:
     -g <branches>        Specify list of branches to identify Generated MC [default: RunNumber,EventNumber]
     -l <min_t>           Set lower bound of t-distribution [default: 0.1]
     -h <max_t>           Set upper bound of t-distribution [default: 2.0]
-    -n <n_bins>          Set number of bins to use (or any valid input to np.histogram(bins=...)) [default=rice]
+    -n <n_bins>          Set number of bins to use (or any valid input to np.histogram(bins=...)) [default=sqrt]
     --help               Show this screen.
 
 Notes:
