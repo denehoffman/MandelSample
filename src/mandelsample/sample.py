@@ -10,8 +10,7 @@ Options:
     -g <branches>        Specify list of branches to identify Generated MC [default: RunNumber,EventNumber]
     -l <min_t>           Set lower bound of t-distribution [default: 0.1]
     -h <max_t>           Set upper bound of t-distribution [default: 2.0]
-    -n <n_bins>          Set number of bins to use (overrides automatic calculation)
-    -b --binning <type>  Specify binning type ('sqrt' or 'rice') [default: sqrt]
+    -n <n_bins>          Set number of bins to use (or any valid input to np.histogram(bins=...)) [default=rice]
     --help               Show this screen.
 
 Notes:
@@ -57,8 +56,7 @@ def main():
         print(f"Error! Bounds on -t are unphysical ({t_low} ≮ {t_high})")
         sys.exit(1)
     
-    custom_n_bins = args['-n']
-    binning_type = args['--binning']
+    n_bins = args['-n']
     
     t_data = args['--t-data']
     t_acc = args['--t-acc']
@@ -88,17 +86,14 @@ def main():
         gen_df = gen_tree.arrays([t_gen, *gen_branches], t_filter(t_gen), library='np')
         gen_t = gen_df[t_gen]
 
-        # Dynamically calculate and store the number of bins using info from the data
-        if custom_n_bins:
-            n_bins_data = int(custom_n_bins)
-        elif binning_type == 'rice':
-            n_bins_data = int(np.ceil(2 * np.cbrt(len(data_t))))
-        else:  # Default to sqrt if no valid binning type is provided
-            n_bins_data = int(np.ceil(np.sqrt(len(data_t))))
+        try: 
+            n_bins = int(n_bins)
+        except ValueError:
+            pass
         
         # Make some histograms of t for each dataset
-        data_hist, bins = np.histogram(data_t, range=(t_low, t_high), bins=n_bins_data)
-        acc_hist, _ = np.histogram(acc_t, range=(t_low, t_high), bins=n_bins_data)
+        data_hist, bins = np.histogram(data_t, range=(t_low, t_high), bins=n_bins)
+        acc_hist, _ = np.histogram(acc_t, range=(t_low, t_high), bins=len(data_hist))
 
         # Get probability distribution
         pdf = data_hist / acc_hist
